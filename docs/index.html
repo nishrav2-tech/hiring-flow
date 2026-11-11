@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiring Flow · Utopian Capital</title>
+<link rel="icon" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F8F5EF; --surface:#FFFFFF; --surface-2:#F1EDE3;
+  --ink:#1A1918; --ink-2:#4A4642; --ink-3:#857F76;
+  --border:#E5DFD1; --border-strong:#C9C0AC;
+  --accent:#2E5D3A; --accent-ink:#FAFBF8; --accent-soft:#E4EEDF;
+  --gold:#C69B4F; --gold-soft:#F5EBD6; --gold-ink:#6B4A0E;
+  --danger:#B8422E; --danger-soft:#FBE9E4;
+  --info-soft:#E4EBF3; --info-ink:#1F3C5C;
+  --success-soft:#DEEDD8; --success-ink:#285B18;
+  --purple-soft:#E7E4F1; --purple-ink:#38315C;
+  --shadow-sm:0 1px 2px rgba(20,17,10,.04); --shadow-lg:0 12px 40px rgba(20,17,10,.14);
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; --serif:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+.hidden{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.top{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+header.top .wrap{display:flex;align-items:center;gap:14px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:19px;white-space:nowrap}
+.brand img{height:26px;width:auto;max-width:96px;object-fit:contain}
+.brand small{font:500 12px var(--sans);color:var(--ink-3)}
+.grow{flex:1}
+select.role{padding:7px 10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface);max-width:260px}
+.btn{border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--r-sm);padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--danger);border-color:#E3B5AA}
+.btn.sm{padding:4px 9px;font-size:13px}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:18px 0 18px;overflow-x:auto}
+nav.tabs button{border:0;background:none;padding:10px 14px;cursor:pointer;color:var(--ink-3);border-bottom:2px solid transparent;font-weight:500;white-space:nowrap}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs .count{background:var(--gold-soft);color:var(--gold-ink);border-radius:10px;padding:0 7px;font-size:12px;margin-left:6px}
+h1{font:400 26px/1.2 var(--serif);margin:22px 0 2px}
+h2{font:500 15px var(--sans);margin:0 0 10px}
+.sub{color:var(--ink-3);margin:0}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow-sm)}
+.kpi .label{color:var(--ink-3);font-size:12.5px}
+.kpi .val{font:400 30px/1.15 var(--serif);margin-top:4px}
+.kpi .hint{font-size:12px;color:var(--ink-3)}
+.kpi.attn{border-color:var(--gold);background:var(--gold-soft)}
+.kpi.attn .label,.kpi.attn .hint{color:var(--gold-ink)}
+.two{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}
+@media(max-width:880px){.two{grid-template-columns:minmax(0,1fr)}}
+.funnel .row{display:grid;grid-template-columns:150px minmax(0,1fr) 44px;gap:10px;align-items:center;margin:7px 0;font-size:13px;cursor:pointer}
+.funnel .row:hover .lbl{color:var(--ink)}
+.funnel .lbl{color:var(--ink-2)}
+.funnel .bar{height:14px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.funnel .bar i{display:block;height:100%;background:var(--accent);border-radius:0 4px 4px 0}
+.funnel .bar i.gold{background:var(--gold)} .funnel .bar i.grey{background:var(--border-strong)}
+.funnel .n{text-align:right;font-weight:600}
+.list{display:flex;flex-direction:column}
+.item{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--border)}
+.item:first-child{border-top:0}
+.item .who{flex:1;min-width:0}
+.item .who b{font-weight:600}
+.item .who div{color:var(--ink-3);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:500;white-space:nowrap}
+.p-applied{background:var(--surface-2);color:var(--ink-2)}
+.p-queued{background:var(--info-soft);color:var(--info-ink)}
+.p-assessment{background:var(--info-soft);color:var(--info-ink)}
+.p-graded{background:var(--gold-soft);color:var(--gold-ink)}
+.p-video{background:var(--success-soft);color:var(--success-ink)}
+.p-no_submit,.p-out{background:var(--danger-soft);color:var(--danger)}
+.p-archived{background:var(--purple-soft);color:var(--purple-ink)}
+.p-ok{background:var(--success-soft);color:var(--success-ink)} .p-warn{background:var(--gold-soft);color:var(--gold-ink)} .p-bad{background:var(--danger-soft);color:var(--danger)}
+.score{font:500 15px var(--serif)}
+.empty{color:var(--ink-3);padding:14px 0}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.filters input,.filters select{padding:7px 10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface)}
+.filters input{min-width:220px;flex:1}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;color:var(--ink-3);padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer} tbody tr:hover{background:#FCFBF7}
+td .muted{color:var(--ink-3);font-size:12px}
+.clip{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.yes{color:var(--success-ink)} .no{color:var(--danger)}
+.posts{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.post .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.post .platform{font:500 16px var(--serif)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
+.kv dt{color:var(--ink-3)} .kv dd{margin:0}
+.flow{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.step{flex:1;min-width:150px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px}
+.step .d{font-size:12px;color:var(--ink-3)} .step .t{font-weight:600;margin:2px 0}
+.step .n{font:400 22px var(--serif)}
+.arrow{align-self:center;color:var(--border-strong);font-size:18px}
+.runs{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.run .when{color:var(--accent);font-weight:600}
+.run .next{font-size:12.5px;color:var(--ink-3);margin-top:6px}
+ul.rules{margin:0;padding-left:18px} ul.rules li{margin:3px 0}
+.log .item{align-items:flex-start}
+.log time{color:var(--ink-3);font-size:12px;white-space:nowrap;min-width:84px}
+.banner{background:var(--gold-soft);color:var(--gold-ink);border:1px solid #E9D4A8;border-radius:var(--r-md);padding:10px 14px;margin:14px 0 0}
+.scrim{position:fixed;inset:0;background:rgba(20,17,10,.28);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);z-index:41;box-shadow:var(--shadow-lg);overflow-y:auto;padding:22px}
+.drawer h3{font:400 22px var(--serif);margin:0}
+.drawer section{border-top:1px solid var(--border);padding:14px 0}
+.drawer section:first-of-type{border-top:0}
+.drawer .label{font-size:12px;color:var(--ink-3);text-transform:none;margin-bottom:4px}
+.drawer .actions{display:flex;flex-wrap:wrap;gap:8px}
+.secs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.secs div{background:var(--surface-2);border-radius:var(--r-sm);padding:8px;text-align:center}
+.secs b{display:block;font:500 17px var(--serif)} .secs span{font-size:11.5px;color:var(--ink-3)}
+.secs .low{background:var(--danger-soft);color:var(--danger)}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:flex;gap:10px;font-size:13px;padding:4px 0}
+.timeline li span{color:var(--ink-3);min-width:88px}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:90vh;overflow-y:auto;background:var(--surface);border-radius:var(--r-lg);z-index:41;padding:22px;box-shadow:var(--shadow-lg)}
+.form label{display:block;font-size:12.5px;color:var(--ink-2);margin:10px 0 4px}
+.form input,.form textarea{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:var(--r-sm);background:var(--surface)}
+.form textarea{min-height:64px;resize:vertical}
+.login{max-width:380px;margin:12vh auto;text-align:center}
+.login .card{text-align:left}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:var(--r-md);z-index:60;font-size:13px}
+.err{color:var(--danger);font-size:13px;margin-top:8px}
+@media(max-width:640px){header.top .wrap{gap:8px;flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:10px}.brand small{display:none}.grow{display:none}select.role{flex:1 1 100%;max-width:none;order:3}.filters input{min-width:0;flex:1 1 100%}.funnel .row{grid-template-columns:120px minmax(0,1fr) 34px}.secs{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div id="login" class="login hidden">
+  <div class="brand" style="justify-content:center;margin-bottom:18px"><img src="logo.png" alt=""><span>Hiring Flow</span></div>
+  <div class="card">
+    <h2>Sign in</h2>
+    <p class="sub" style="margin-bottom:10px">Use your Utopian CRM login. Leave the password blank to get a sign-in link by email.</p>
+    <form id="loginForm" class="form">
+      <label for="lEmail">Email</label><input id="lEmail" type="email" autocomplete="username" required>
+      <label for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password">
+      <div style="margin-top:14px"><button class="btn primary" type="submit" style="width:100%">Sign in</button></div>
+      <div id="loginMsg" class="err"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top"><div class="wrap">
+    <div class="brand"><img src="logo.png" alt=""><span>Hiring Flow</span><small>Utopian Capital</small></div>
+    <div class="grow"></div>
+    <select id="roleSel" class="role" aria-label="Role"></select>
+    <button class="btn" id="newRoleBtn">New role</button>
+    <button class="btn" id="signOut" title="Sign out">Sign out</button>
+  </div></header>
+
+  <main class="wrap" style="padding-bottom:60px">
+    <h1 id="roleTitle"></h1>
+    <p class="sub" id="roleSub"></p>
+    <div id="roleBanner" class="banner hidden"></div>
+
+    <nav class="tabs" id="tabs">
+      <button data-tab="overview" class="on">Overview</button>
+      <button data-tab="candidates">Candidates</button>
+      <button data-tab="postings">Postings</button>
+      <button data-tab="workflow">Workflow</button>
+    </nav>
+
+    <section id="t-overview">
+      <div class="grid kpis" id="kpis"></div>
+      <div class="grid two" style="margin-top:12px">
+        <div class="card"><h2>Pipeline, current round</h2><div class="funnel" id="funnel"></div></div>
+        <div class="card"><h2>Needs you</h2><div class="list" id="needs"></div></div>
+      </div>
+      <div class="grid two" style="margin-top:12px">
+        <div class="card"><h2>Assessments out</h2><div class="list" id="outList"></div></div>
+        <div class="card log"><h2>Recent activity</h2><div class="list" id="recent"></div></div>
+      </div>
+    </section>
+
+    <section id="t-candidates" class="hidden">
+      <div class="filters">
+        <input id="q" type="search" placeholder="Search name, email, location, experience">
+        <select id="fStage"><option value="">All stages</option></select>
+        <select id="fRound"><option value="current">Current round</option><option value="archived">Previous rounds</option><option value="">All rounds</option></select>
+        <select id="fScreen"><option value="">Any screeners</option><option value="Yes">All 3 Yes</option><option value="No">Not all Yes</option></select>
+      </div>
+      <div class="tablewrap"><table><thead><tr>
+        <th data-sort="name">Name</th><th data-sort="stage">Stage</th><th data-sort="fit">Fit</th><th data-sort="all3Yes">Screeners</th>
+        <th data-sort="location">Location</th><th>Sales experience</th><th data-sort="score">Score</th><th data-sort="deadline">Deadline</th>
+      </tr></thead><tbody id="cTable"></tbody></table></div>
+      <p class="sub" id="cCount" style="margin-top:8px"></p>
+    </section>
+
+    <section id="t-postings" class="hidden">
+      <div class="grid posts" id="posts"></div>
+    </section>
+
+    <section id="t-workflow" class="hidden">
+      <h2>Candidate journey</h2>
+      <div class="flow" id="flow"></div>
+      <h2 style="margin-top:22px">Scheduled runs</h2>
+      <div class="grid runs" id="runs"></div>
+      <div class="grid two" style="margin-top:12px">
+        <div class="card"><h2>Rules</h2><ul class="rules" id="rules"></ul><h2 style="margin-top:16px">Who gets through</h2><p id="criteria" style="margin:0"></p><ol id="screeners" style="margin:8px 0 0;padding-left:18px"></ol></div>
+        <div class="card log"><h2>Activity log</h2><div class="list" id="log"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="scrim" class="scrim hidden"></div>
+<aside id="drawer" class="drawer hidden" aria-label="Candidate details"></aside>
+<div id="modal" class="modal hidden"></div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

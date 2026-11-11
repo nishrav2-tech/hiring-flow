@@ -1,0 +1,3 @@
+docs/demo-data.json
+*.sql.local
+.DS_Store
