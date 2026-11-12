@@ -56,8 +56,8 @@ def main():
                       "Comfortable with commission-based pay?"],
         "criteria": "Yes to all 3 screeners, plus sales and real estate experience. Any country.",
         "cadence": [
-            {"name": "Daily deadline run", "when": "Weekdays 8:04 AM CT", "does": "Sends approved assessment invites, sends reminders (1-day extension), scores new submissions, asks Jay about video invites"},
-            {"name": "Applicant pull", "when": "Mon, Wed, Fri 9:04 AM CT", "does": "Checks and rewords/reposts job posts (LinkedIn 3 days, Indeed 7 days minimum), adds new applicants, auto-sends the assessment to clear qualifiers, lists borderline ones, Friday video review list"}],
+            {"name": "Daily deadline run", "when": "Weekdays 8:04 AM CT", "does": "Checks the LinkedIn and Indeed posts and reposts any that went down (reworded), sends approved assessment invites, sends reminders (1-day extension), scores new submissions, asks Jay about video invites"},
+            {"name": "Applicant pull", "when": "Mon, Wed, Fri 9:04 AM CT", "does": "Checks the job posts and reposts any that went down (reworded), adds new applicants, auto-sends the assessment to clear qualifiers, lists borderline ones, Friday video review list"}],
         "rules": ["No video link without Jay's approval by name", "Anything ready after 5 PM CT waits for Jay: send now or next morning",
                   "No rejection emails", "Pramod CC'd only when Jay asks", "Never pay, promote or sponsor a job post"],
         "syncedAt": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),

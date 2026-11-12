@@ -265,21 +265,21 @@
   }
 
   function renderPostings() {
-    const d = role().doc || {}, min = d.repostMinDays || { linkedin: 3, indeed: 7 }, today = todayStr();
+    const d = role().doc || {}, min = d.repostMinDays || { linkedin: 0, indeed: 0 }, today = todayStr();
     const posts = S.posts.slice().sort((a, b) => String(b.doc.posted).localeCompare(String(a.doc.posted)));
     $("#posts").innerHTML = posts.length ? posts.map((p) => {
       const x = p.doc, status = String(x.status || "");
       const setup = /setup|requested/i.test(status);
       const cls = /active|open|reposted/i.test(status) ? "p-ok" : (setup || /paused|needs/i.test(status)) ? "p-warn" : "p-bad";
       const live = x.posted ? daysBetween(String(x.posted).slice(0, 10), today) : null;
-      const m = min[String(x.platform || "").toLowerCase()] || 7;
+      const m = min[String(x.platform || "").toLowerCase()] ?? 0;
       const eligible = live != null && live >= m;
       const url = safeUrl(x.url);
       return `<div class="card post"><div class="top"><span class="platform">${esc(x.platform)}</span><span class="pill ${cls}">${esc(status || "Unknown")}</span></div>
         <dl class="kv"><dt>Title</dt><dd>${esc(x.title || "")}</dd><dt>Location</dt><dd>${esc(x.location || "")}</dd>
         <dt>Posted</dt><dd>${fmtDate(x.posted)}${live != null ? ` (${live} days)` : ""}</dd>
         <dt>Applicants</dt><dd>${esc(x.applicants ?? "")}</dd><dt>Last checked</dt><dd>${fmtDate(x.lastChecked)}</dd>
-        <dt>Repost</dt><dd>${setup ? "Waiting for Claude" : /paused|closed|expired/i.test(status) ? (eligible ? "Eligible now (reworded)" : `After ${m} days live`) : "Not needed"}</dd></dl>
+        <dt>Repost</dt><dd>${setup ? "Waiting for Claude" : /paused|closed|expired/i.test(status) ? (eligible ? "Next run reposts it (reworded)" : `After ${m} days live`) : "Not needed"}</dd></dl>
         ${x.notes ? `<p class="sub" style="margin-top:8px;font-size:12.5px">${esc(x.notes)}</p>` : ""}
         ${url ? `<p style="margin:8px 0 0"><a href="${esc(url)}" target="_blank" rel="noopener">${setup ? "Open link" : "Open post"}</a></p>` : ""}</div>`;
     }).join("") : `<div class="empty">No postings recorded for this role yet.</div>`;
