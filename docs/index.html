@@ -134,6 +134,32 @@ ul.rules{margin:0;padding-left:18px} ul.rules li{margin:3px 0}
 .login .card{text-align:left}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:var(--r-md);z-index:60;font-size:13px}
 .err{color:var(--danger);font-size:13px;margin-top:8px}
+a.brand{color:inherit;text-decoration:none}
+.crumbs{margin:18px 0 0;font-size:13px;color:var(--ink-3)}
+.crumbs a{text-decoration:none}
+.homehead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rolegrid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-top:18px}
+a.rolecard{display:flex;flex-direction:column;gap:12px;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s}
+a.rolecard:hover{border-color:var(--border-strong);box-shadow:var(--shadow-lg)}
+a.rolecard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rolecard .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.rolecard h3{font:400 21px/1.2 var(--serif);margin:0}
+.rolecard .loc{color:var(--ink-3);font-size:12.5px;margin-top:2px}
+.rolestats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.rolestats div{background:var(--surface-2);border-radius:var(--r-sm);padding:6px 8px}
+.rolestats b{display:block;font:400 19px/1.2 var(--serif)}
+.rolestats span{font-size:11.5px;color:var(--ink-3)}
+.rolestats .attn{background:var(--gold-soft)} .rolestats .attn span,.rolestats .attn b{color:var(--gold-ink)}
+.rolecard .foot{font-size:12.5px;color:var(--ink-3);display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--border);padding-top:10px}
+.rolecard .foot b{color:var(--ink-2);font-weight:500}
+button.addcard{border:1.5px dashed var(--border-strong);background:transparent;box-shadow:none;min-height:190px;cursor:pointer;color:var(--ink-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+button.addcard:hover{background:var(--surface);border-color:var(--accent);color:var(--accent)}
+button.addcard .plus{font:300 32px/1 var(--serif)}
+.form .hint{font-size:12px;color:var(--ink-3);margin:3px 0 0}
+.form fieldset{border:0;border-top:1px solid var(--border);margin:16px 0 0;padding:6px 0 0}
+.form legend{font-weight:600;font-size:13px;padding:0 0 2px}
+.form .row2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media(max-width:560px){.form .row2{grid-template-columns:1fr}}
 @media(max-width:640px){header.top .wrap{gap:8px;flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:10px}.brand small{display:none}.grow{display:none}select.role{flex:1 1 100%;max-width:none;order:3}.filters input{min-width:0;flex:1 1 100%}.funnel .row{grid-template-columns:120px minmax(0,1fr) 34px}.secs{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -155,15 +181,20 @@ ul.rules{margin:0;padding-left:18px} ul.rules li{margin:3px 0}
 
 <div id="app" class="hidden">
   <header class="top"><div class="wrap">
-    <div class="brand"><img src="logo.png" alt=""><span>Hiring Flow</span><small>Utopian Capital</small></div>
+    <a class="brand" href="#/" title="All roles"><img src="logo.png" alt=""><span>Hiring Flow</span><small>Utopian Capital</small></a>
     <div class="grow"></div>
-    <select id="roleSel" class="role" aria-label="Role"></select>
     <button class="btn" id="newRoleBtn">New role</button>
     <button class="btn" id="signOut" title="Sign out">Sign out</button>
   </div></header>
 
-  <main class="wrap" style="padding-bottom:60px">
-    <h1 id="roleTitle"></h1>
+  <main class="wrap hidden" id="home" style="padding-bottom:60px">
+    <div class="homehead"><div><h1>Roles</h1><p class="sub" id="homeSub">Every job you're hiring for. Open one to see its candidates, postings and runs.</p></div></div>
+    <div class="grid rolegrid" id="roleGrid"></div>
+  </main>
+
+  <main class="wrap hidden" id="roleView" style="padding-bottom:60px">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">All roles</a> <span aria-hidden="true">›</span> <span id="crumbRole"></span></nav>
+    <h1 id="roleTitle" style="margin-top:8px"></h1>
     <p class="sub" id="roleSub"></p>
     <div id="roleBanner" class="banner hidden"></div>
 

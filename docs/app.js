@@ -17,7 +17,7 @@
   const STAGE_LABEL = Object.fromEntries(STAGES);
 
   let sb = null, user = null;
-  const S = { roles: [], roleId: null, cands: [], posts: [], events: [], tab: "overview", sort: { k: "stage", dir: 1 } };
+  const S = { view: "home", roles: [], roleId: null, cands: [], posts: [], events: [], tab: "overview", sort: { k: "stage", dir: 1 } };
 
   // ---------- helpers ----------
   const fmtDate = (d) => {
@@ -83,11 +83,19 @@
       for (const x of [r, c, p, e]) if (x.error) throw x.error;
       S.roles = r.data; S.allCands = c.data; S.allPosts = p.data; S.allEvents = e.data;
     }
-    if (!S.roleId || !S.roles.find((x) => x.id === S.roleId)) {
-      const saved = (() => { try { return localStorage.getItem("hf_role"); } catch (_) { return null; } })();
-      S.roleId = (S.roles.find((x) => x.id === saved) || S.roles[0] || {}).id || null;
-    }
-    pick();
+    S.loaded = true;
+    route();
+  }
+
+  // ---------- routing: #/ = all roles, #/role/<id> = one role ----------
+  function route() {
+    const m = location.hash.match(/^#\/role\/([^/?#]+)/);
+    const id = m ? decodeURIComponent(m[1]) : null;
+    if (id && S.loaded && !S.roles.find((r) => r.id === id)) { location.replace("#/"); return; }
+    const changed = id !== S.roleId;
+    S.view = id ? "role" : "home"; S.roleId = id;
+    if (changed) { closeAll(); setTab("overview"); window.scrollTo(0, 0); }
+    if (S.loaded) pick();
   }
   function pick() {
     S.cands = (S.allCands || []).filter((x) => x.role_id === S.roleId);
@@ -112,17 +120,70 @@
 
   // ---------- render ----------
   function render() {
+    $("#home").classList.toggle("hidden", S.view !== "home");
+    $("#roleView").classList.toggle("hidden", S.view !== "role");
+    if (S.view === "home") { document.title = "Hiring Flow · Utopian Capital"; return renderHome(); }
     const r = role(), d = r.doc || {};
-    const sel = $("#roleSel");
-    sel.innerHTML = S.roles.map((x) => `<option value="${esc(x.id)}"${x.id === S.roleId ? " selected" : ""}>${esc(x.doc.title || x.id)}${x.doc.status && x.doc.status !== "open" ? " (" + esc(x.doc.status) + ")" : ""}</option>`).join("") || `<option>No roles yet</option>`;
+    document.title = (d.title || "Role") + " · Hiring Flow";
+    $("#crumbRole").textContent = d.title || "";
     $("#roleTitle").textContent = d.title || "No role selected";
     $("#roleSub").textContent = [d.location, d.status ? "Status: " + d.status : "", d.syncedAt ? "Last synced " + new Date(d.syncedAt).toLocaleString("en-US", { timeZone: TZ, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) + " CT" : ""].filter(Boolean).join(" · ");
     const banner = $("#roleBanner");
-    if (r.id && d.automation !== "on") { banner.innerHTML = "Automation for this role is not set up yet. Ask Claude to set up the hiring runs for it (postings, applicant pulls, assessment, grading)."; banner.classList.remove("hidden"); }
+    if (r.id && d.automation !== "on") {
+      banner.innerHTML = `<b>Waiting for Claude to set this role up.</b> ${d.setupRequestedAt ? "Requested " + fmtDate(d.setupRequestedAt) + ". " : ""}Tell Claude <i>"set up hiring flow for ${esc(d.title || "this role")}"</i> and it will take over the LinkedIn and Indeed posts, screeners, assessment and scheduled runs. Daily runs also list roles waiting for setup.`;
+      banner.classList.remove("hidden");
+    }
     else banner.classList.add("hidden");
     const needN = current().filter((c) => { const n = needFor(c); return n && n.k !== "pending"; }).length;
     $('#tabs [data-tab="overview"]').innerHTML = "Overview" + (needN ? `<span class="count">${needN}</span>` : "");
     renderOverview(); renderCandidates(); renderPostings(); renderWorkflow();
+  }
+
+  function roleStats(r) {
+    const cands = (S.allCands || []).filter((c) => c.role_id === r.id && c.doc.stage !== "archived");
+    const posts = (S.allPosts || []).filter((p) => p.role_id === r.id);
+    const latest = {};
+    posts.forEach((p) => { const k = p.doc.platform || "Post"; if (!latest[k] || String(p.doc.posted || "") > String(latest[k].doc.posted || "")) latest[k] = p; });
+    return {
+      applicants: cands.length,
+      needs: cands.filter((c) => { const n = needFor(c); return n && n.k !== "pending"; }).length,
+      out: cands.filter((c) => ["assessment", "queued"].includes(effectiveStage(c))).length,
+      scored: cands.filter((c) => c.doc.score != null).length,
+      posts: Object.values(latest),
+    };
+  }
+  function roleNextRun(d) {
+    if (d.automation !== "on") return "";
+    const times = (d.cadence || []).map((c) => /daily/i.test(c.name) ? nextRun([1, 2, 3, 4, 5], 8, 4) : /pull/i.test(c.name) ? nextRun([1, 3, 5], 9, 4) : "").filter(Boolean);
+    return times[0] || "";
+  }
+  function roleStatus(d) {
+    if (/closed|filled|paused/i.test(d.status || "")) return ["p-applied", d.status.charAt(0).toUpperCase() + d.status.slice(1)];
+    if (d.automation === "on") return ["p-ok", "Running"];
+    return ["p-warn", "Waiting for setup"];
+  }
+  function renderHome() {
+    const order = (r) => (/closed|filled/i.test(r.doc.status || "") ? 2 : r.doc.automation === "on" ? 0 : 1);
+    const roles = S.roles.slice().sort((a, b) => order(a) - order(b) || String(a.doc.title).localeCompare(String(b.doc.title)));
+    const cards = roles.map((r) => {
+      const d = r.doc || {}, st = roleStats(r), [cls, label] = roleStatus(d), next = roleNextRun(d);
+      const posts = st.posts.length ? st.posts.map((p) => `${esc(p.doc.platform)}: ${esc(p.doc.status || "Unknown")}`).join(" · ") : "No posts yet";
+      return `<a class="card rolecard" href="#/role/${encodeURIComponent(r.id)}">
+        <div class="head"><div><h3>${esc(d.title || r.id)}</h3><div class="loc">${esc(d.location || "")}</div></div><span class="pill ${cls}">${esc(label)}</span></div>
+        <div class="rolestats">
+          <div><b>${st.applicants}</b><span>Applicants</span></div>
+          <div class="${st.needs ? "attn" : ""}"><b>${st.needs}</b><span>Need you</span></div>
+          <div><b>${st.out}</b><span>Tests out</span></div>
+          <div><b>${st.scored}</b><span>Scored</span></div>
+        </div>
+        <div class="foot"><div><b>Posts</b> ${posts}</div><div>${next ? "<b>Next run</b> " + esc(next) : d.automation === "on" ? "" : "Claude will set up the posts and runs"}</div></div>
+      </a>`;
+    });
+    cards.push(`<button class="card addcard" type="button" id="addRoleCard"><span class="plus" aria-hidden="true">+</span><b>New role</b><span class="sub">Add the job and its LinkedIn and Indeed links</span></button>`);
+    $("#roleGrid").innerHTML = cards.join("");
+    $("#addRoleCard").onclick = newRole;
+    $("#homeSub").textContent = S.roles.length ? "Every job you're hiring for. Open one to see its candidates, postings and runs."
+      : "No roles yet. Add one to get started. If you expected to see roles, your login may not be on the Hiring Flow member list.";
   }
 
   function renderOverview() {
@@ -208,7 +269,8 @@
     const posts = S.posts.slice().sort((a, b) => String(b.doc.posted).localeCompare(String(a.doc.posted)));
     $("#posts").innerHTML = posts.length ? posts.map((p) => {
       const x = p.doc, status = String(x.status || "");
-      const cls = /active|open|reposted/i.test(status) ? "p-ok" : /paused|needs/i.test(status) ? "p-warn" : "p-bad";
+      const setup = /setup|requested/i.test(status);
+      const cls = /active|open|reposted/i.test(status) ? "p-ok" : (setup || /paused|needs/i.test(status)) ? "p-warn" : "p-bad";
       const live = x.posted ? daysBetween(String(x.posted).slice(0, 10), today) : null;
       const m = min[String(x.platform || "").toLowerCase()] || 7;
       const eligible = live != null && live >= m;
@@ -217,9 +279,9 @@
         <dl class="kv"><dt>Title</dt><dd>${esc(x.title || "")}</dd><dt>Location</dt><dd>${esc(x.location || "")}</dd>
         <dt>Posted</dt><dd>${fmtDate(x.posted)}${live != null ? ` (${live} days)` : ""}</dd>
         <dt>Applicants</dt><dd>${esc(x.applicants ?? "")}</dd><dt>Last checked</dt><dd>${fmtDate(x.lastChecked)}</dd>
-        <dt>Repost</dt><dd>${/paused|closed|expired/i.test(status) ? (eligible ? "Eligible now (reworded)" : `After ${m} days live`) : "Not needed"}</dd></dl>
+        <dt>Repost</dt><dd>${setup ? "Waiting for Claude" : /paused|closed|expired/i.test(status) ? (eligible ? "Eligible now (reworded)" : `After ${m} days live`) : "Not needed"}</dd></dl>
         ${x.notes ? `<p class="sub" style="margin-top:8px;font-size:12.5px">${esc(x.notes)}</p>` : ""}
-        ${url ? `<p style="margin:8px 0 0"><a href="${esc(url)}" target="_blank" rel="noopener">Open post</a></p>` : ""}</div>`;
+        ${url ? `<p style="margin:8px 0 0"><a href="${esc(url)}" target="_blank" rel="noopener">${setup ? "Open link" : "Open post"}</a></p>` : ""}</div>`;
     }).join("") : `<div class="empty">No postings recorded for this role yet.</div>`;
   }
 
@@ -296,34 +358,64 @@
 
   // ---------- new role ----------
   function newRole() {
-    $("#modal").innerHTML = `<h2 style="font:400 22px var(--serif)">New role</h2><p class="sub">Creates the role on the dashboard. Claude then sets up its postings and scheduled runs.</p>
-      <form class="form" id="roleForm">
-        <label>Job title</label><input name="title" required placeholder="Dispositions Manager">
-        <label>Location</label><input name="location" placeholder="Houston, TX (remote OK)">
-        <label>Who gets through (criteria)</label><textarea name="criteria" placeholder="Sales experience, real estate experience, ..."></textarea>
-        <label>Screening questions (one per line)</label><textarea name="screeners"></textarea>
-        <label>Assessment link (optional)</label><input name="assessmentLink" type="url">
-        <label>Video interview link (optional)</label><input name="videoLink" type="url">
-        <label>Video recommendation score</label><input name="videoThreshold" type="number" value="89" min="0" max="100" step="1">
-        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button type="button" class="btn" id="cancelRole">Cancel</button><button class="btn primary">Create role</button></div>
-        <div class="err" id="roleErr"></div></form>`;
+    $("#drawer").classList.add("hidden");
+    $("#modal").innerHTML = `<h2 style="font:400 22px var(--serif)">New role</h2><p class="sub">Add the job and where it's posted. Claude takes it from there: posts or takes over the listings, screens applicants, sends the assessment and sets up the scheduled runs.</p>
+      <form class="form" id="roleForm" novalidate>
+        <label for="nrTitle">Job title</label><input id="nrTitle" name="title" required placeholder="Dispositions Manager">
+        <div class="row2">
+          <div><label for="nrLoc">Location</label><input id="nrLoc" name="location" placeholder="Houston, TX (remote OK)"></div>
+          <div><label for="nrPay">Pay</label><input id="nrPay" name="pay" placeholder="Commission only, part-time"></div>
+        </div>
+        <fieldset><legend>Job posts</legend>
+          <label for="nrLi">LinkedIn link</label><input id="nrLi" name="linkedin" type="url" inputmode="url" placeholder="https://www.linkedin.com/...">
+          <label for="nrIn">Indeed link</label><input id="nrIn" name="indeed" type="url" inputmode="url" placeholder="https://employers.indeed.com/...">
+          <p class="hint">Paste the job post links if they're already up. Leave them blank and Claude will create free posts from the description below.</p>
+          <label for="nrDesc">Job description</label><textarea id="nrDesc" name="description" style="min-height:96px" placeholder="What the role does, hours, pay, what you're looking for"></textarea>
+        </fieldset>
+        <fieldset><legend>Screening</legend>
+          <label for="nrCrit">Who gets through</label><textarea id="nrCrit" name="criteria" placeholder="Sales experience and real estate experience. Any country."></textarea>
+          <label for="nrScr">Screening questions (one per line)</label><textarea id="nrScr" name="screeners" placeholder="Comfortable with commission-based pay?"></textarea>
+          <div class="row2">
+            <div><label for="nrAss">Assessment link (optional)</label><input id="nrAss" name="assessmentLink" type="url" inputmode="url"></div>
+            <div><label for="nrVid">Video interview link (optional)</label><input id="nrVid" name="videoLink" type="url" inputmode="url"></div>
+          </div>
+          <label for="nrThr">Video recommendation score</label><input id="nrThr" name="videoThreshold" type="number" value="89" min="0" max="100" step="1" style="max-width:120px">
+        </fieldset>
+        <label for="nrNotes">Notes for Claude (optional)</label><textarea id="nrNotes" name="notes" placeholder="Anything else Claude should know when setting this up"></textarea>
+        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button type="button" class="btn" id="cancelRole">Cancel</button><button class="btn primary" type="submit" id="createRole">Create role</button></div>
+        <div class="err" id="roleErr" role="alert"></div></form>`;
     $("#modal").classList.remove("hidden"); $("#scrim").classList.remove("hidden");
+    $("#nrTitle").focus();
     $("#cancelRole").onclick = closeAll;
     $("#roleForm").onsubmit = async (ev) => {
       ev.preventDefault();
-      const f = Object.fromEntries(new FormData(ev.target).entries());
+      const f = Object.fromEntries(Array.from(new FormData(ev.target).entries()).map(([k, v]) => [k, String(v).trim()]));
+      const err = (m) => { $("#roleErr").textContent = m; };
       const id = f.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50);
-      if (!id) return ($("#roleErr").textContent = "Enter a job title.");
-      if (S.roles.find((r) => r.id === id)) return ($("#roleErr").textContent = "A role with that name already exists.");
-      const doc = { title: f.title.trim(), location: f.location.trim(), status: "open", automation: "not set up", criteria: f.criteria.trim(),
-        screeners: f.screeners.split("\n").map((s) => s.trim()).filter(Boolean), assessmentLink: f.assessmentLink || null, videoLink: f.videoLink || null,
-        videoThreshold: Number(f.videoThreshold) || 89, deadlineDays: 5, cadence: [], rules: ["No video link without Jay's approval by name", "No rejection emails"], createdAt: new Date().toISOString() };
-      if (DEMO) { S.roles.push({ id, doc }); S.roleId = id; closeAll(); pick(); return; }
+      if (!id) return err("Enter a job title.");
+      if (S.roles.find((r) => r.id === id)) return err("A role with that name already exists.");
+      for (const k of ["linkedin", "indeed", "assessmentLink", "videoLink"]) if (f[k] && !safeUrl(f[k])) return err("Links need to start with https://");
+      const now = new Date().toISOString();
+      const doc = { title: f.title, location: f.location, pay: f.pay, status: "open", automation: "not set up", setupRequestedAt: now,
+        links: { linkedin: f.linkedin || null, indeed: f.indeed || null }, description: f.description, notesForClaude: f.notes,
+        criteria: f.criteria, screeners: f.screeners.split("\n").map((x) => x.trim()).filter(Boolean),
+        assessmentLink: f.assessmentLink || null, videoLink: f.videoLink || null, videoThreshold: Number(f.videoThreshold) || 89, deadlineDays: 5,
+        repostMinDays: { linkedin: 3, indeed: 7 }, cadence: [],
+        rules: ["No video link without Jay's approval by name", "Anything ready after 5 PM CT waits for Jay: send now or next morning", "No rejection emails", "Never pay, promote or sponsor a job post"],
+        createdAt: now, createdBy: user ? user.email : "demo" };
+      const posts = [["LinkedIn", f.linkedin], ["Indeed", f.indeed]].map(([platform, url]) => ({ id: `${id}:${platform.toLowerCase()}-initial`, role_id: id,
+        doc: { platform, title: f.title, location: f.location, status: "Setup requested", url: url || null, lastChecked: todayStr(),
+          notes: url ? "Link added by Jay. Claude will check it and take over this post." : "No link yet. Claude will create the first free post." } }));
+      const ev0 = { role_id: id, doc: { kind: "Role created", text: `${f.title} added on the dashboard. Waiting for Claude to set up posts and runs.`, source: "dashboard" } };
+      if (DEMO) { S.roles.push({ id, doc }); S.allPosts = (S.allPosts || []).concat(posts); closeAll(); location.hash = "#/role/" + encodeURIComponent(id); toast("Role created (demo, not stored)"); return; }
+      $("#createRole").disabled = true;
       const { error } = await sb.from("hf_roles").insert({ id, doc });
-      if (error) return ($("#roleErr").textContent = error.message);
-      await sb.from("hf_events").insert({ role_id: id, doc: { kind: "Role created", text: `${doc.title} added on the dashboard`, source: "dashboard" } });
-      S.roleId = id; try { localStorage.setItem("hf_role", id); } catch (_) {}
-      closeAll(); await loadAll(); toast("Role created");
+      if (error) { $("#createRole").disabled = false; return err(error.message); }
+      const r2 = await sb.from("hf_postings").insert(posts);
+      await sb.from("hf_events").insert(ev0);
+      closeAll(); await loadAll();
+      location.hash = "#/role/" + encodeURIComponent(id);
+      toast(r2.error ? "Role created, but the post links did not save: " + r2.error.message : "Role created. Tell Claude to set it up.");
     };
   }
 
@@ -338,7 +430,7 @@
     $$("#tabs button").forEach((b) => b.onclick = () => setTab(b.dataset.tab));
     ["#q", "#fStage", "#fRound", "#fScreen"].forEach((s) => $(s).addEventListener("input", renderCandidates));
     $$("th[data-sort]").forEach((th) => th.onclick = () => { const k = th.dataset.sort; S.sort = { k, dir: S.sort.k === k ? -S.sort.dir : (k === "score" ? -1 : 1) }; renderCandidates(); });
-    $("#roleSel").onchange = (e) => { S.roleId = e.target.value; try { localStorage.setItem("hf_role", S.roleId); } catch (_) {} closeAll(); pick(); };
+    window.addEventListener("hashchange", route);
     $("#newRoleBtn").onclick = newRole;
     $("#scrim").onclick = closeAll;
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
@@ -367,8 +459,7 @@
   async function enter(session) {
     user = session.user;
     $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
-    try { await loadAll(); } catch (e) { $("#roleTitle").textContent = "Could not load data"; $("#roleSub").textContent = e.message || String(e); return; }
-    if (!S.roles.length) { $("#roleTitle").textContent = "No access yet"; $("#roleSub").textContent = "Your login is not on the Hiring Flow member list (hf_members), or no roles exist yet."; }
+    try { await loadAll(); } catch (e) { S.view = "home"; render(); $("#homeSub").textContent = "Could not load data: " + (e.message || String(e)); return; }
     sb.channel("hf").on("postgres_changes", { event: "*", schema: "public", table: "hf_candidates" }, debounceReload)
       .on("postgres_changes", { event: "*", schema: "public", table: "hf_postings" }, debounceReload)
       .on("postgres_changes", { event: "*", schema: "public", table: "hf_events" }, debounceReload)

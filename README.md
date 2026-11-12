@@ -2,11 +2,12 @@
 
 A private dashboard for every role Utopian Capital is hiring for. Hosted on GitHub Pages, with the data in your Utopian CRM Supabase project (`yahosblylysopbxgztvg`), the same setup as Subdivide Finder.
 
+- **Home (Roles):** a card for every role with applicants, how many need you, assessments out, scores, post status and the next run. Click a card to open the role.
 - **Overview:** applicants, screener pass rate, assessments out, scores, video invites, and a "Needs you" list.
 - **Candidates:** every applicant with stage, fit, screener answers, experience, score and deadlines. Click a name to approve the assessment, approve or hold a video invite, remove someone, or leave a note.
 - **Postings:** each LinkedIn and Indeed post with status, days live, applicants and when it can be reposted.
 - **Workflow:** the candidate journey with live counts, the scheduled runs and their next times, the rules, and the activity log.
-- **New role:** add another job. Ask Claude to set up its postings and scheduled runs.
+- **New role:** add the job, its LinkedIn and Indeed links (or leave them blank and give a description), pay, screeners and links. The role shows "Waiting for setup" until you tell Claude "set up hiring flow for <role>"; the daily run also lists roles waiting for setup.
 
 Decisions you make on the dashboard are saved to Supabase. The next scheduled run applies them to the tracker and sends the emails. Video invites only go to people you approve.
 
