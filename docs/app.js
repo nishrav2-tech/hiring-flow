@@ -233,16 +233,33 @@
     return evs.length ? evs.map((e) => `<div class="item"><time>${fmtDate(e.doc.date || e.at)}</time><div class="who"><b>${esc(e.doc.kind || "")}</b><div style="white-space:normal">${esc(e.doc.text || "")}</div></div></div>`).join("") : `<div class="empty">No activity yet.</div>`;
   }
 
+  // In US / Outside US from the free-text location ("Houston, TX", "Cairo, Egypt", "Vancouver, BC, Canada")
+  const US_STATES = "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC PR".split(" ");
+  const US_NAMES = /\b(united states|usa|u\.s\.a?|alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|maine|maryland|massachusetts|michigan|minnesota|mississippi|missouri|montana|nebraska|nevada|new hampshire|new jersey|new mexico|new york|north carolina|north dakota|ohio|oklahoma|oregon|pennsylvania|rhode island|south carolina|south dakota|tennessee|texas|utah|vermont|virginia|washington|west virginia|wisconsin|wyoming|puerto rico|greater houston|chicago area|bay area)\b/i;
+  const FOREIGN = /\b(canada|ontario|quebec|british columbia|alberta|manitoba|nova scotia|\b(bc|on|ab|qc)\b(?=\s*,\s*canada)|mexico|egypt|pakistan|india|nigeria|philippines|kenya|ghana|south africa|eswatini|uk|united kingdom|england|ireland|australia|new zealand|brazil|colombia|argentina|peru|chile|honduras|guatemala|el salvador|dominican republic|jamaica|serbia|montenegro|ukraine|poland|romania|germany|france|spain|portugal|italy|netherlands|turkey|uae|dubai|saudi|qatar|jordan|lebanon|morocco|tunisia|panama|costa rica|bangladesh|sri lanka|nepal|vietnam|indonesia|malaysia|singapore|china|japan|korea|cairo|alexandria|lahore|karachi|islamabad|lagos|abuja|manila|nairobi|mbabane|podgorica|novi sad|curitiba|bucaramanga|tegucigalpa|multan|dunyapur|mehrabpur|sindh|punjab)\b/i;
+  function region(loc) {
+    const t = String(loc || "").trim();
+    if (!t || /^(not specified|not shown|none)$/i.test(t)) return "unknown";
+    const isUS = (x) => US_NAMES.test(x) || /\bUS\b/.test(x) || new RegExp("(^|[,\\s])(" + US_STATES.join("|") + ")(\\s*\\d{5})?\\s*$").test(x.trim());
+    const main = t.replace(/\(.*?\)/g, " ").replace(/\s+/g, " ").trim();
+    if (main && isUS(main)) return "us";
+    if (main && FOREIGN.test(main)) return "out";
+    if (FOREIGN.test(t)) return "out";
+    if (isUS(t)) return "us";
+    return "unknown";
+  }
+
   function renderCandidates() {
     const fs = $("#fStage");
     if (fs.options.length === 1) fs.insertAdjacentHTML("beforeend", STAGES.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join(""));
-    const q = $("#q").value.trim().toLowerCase(), stg = fs.value, rnd = $("#fRound").value, scr = $("#fScreen").value;
+    const q = $("#q").value.trim().toLowerCase(), stg = fs.value, rnd = $("#fRound").value, scr = $("#fScreen").value, loc = $("#fLoc").value;
     let rows = S.cands.filter((c) => {
       const d = c.doc, est = effectiveStage(c);
       if (rnd === "current" && est === "archived") return false;
       if (rnd === "archived" && est !== "archived") return false;
       if (stg && est !== stg) return false;
       if (scr && d.all3Yes !== scr) return false;
+      if (loc && region(d.location) !== loc) return false;
       if (q && ![d.name, d.email, d.location, d.sales, d.realEstate, d.notes].join(" ").toLowerCase().includes(q)) return false;
       return true;
     });
@@ -428,7 +445,7 @@
   }
   function bind() {
     $$("#tabs button").forEach((b) => b.onclick = () => setTab(b.dataset.tab));
-    ["#q", "#fStage", "#fRound", "#fScreen"].forEach((s) => $(s).addEventListener("input", renderCandidates));
+    ["#q", "#fStage", "#fRound", "#fScreen", "#fLoc"].forEach((s) => $(s).addEventListener("input", renderCandidates));
     $$("th[data-sort]").forEach((th) => th.onclick = () => { const k = th.dataset.sort; S.sort = { k, dir: S.sort.k === k ? -S.sort.dir : (k === "score" ? -1 : 1) }; renderCandidates(); });
     window.addEventListener("hashchange", route);
     $("#newRoleBtn").onclick = newRole;
